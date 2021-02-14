@@ -65,7 +65,7 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
         if (dataBuffer.size() > dataBufferSize)
             dataBuffer.erase(dataBuffer.begin());
         //// EOF STUDENT ASSIGNMENT
-        cout << "#1 : LOAD IMAGE INTO BUFFER" << endl;
+        // cout << "#1 : LOAD IMAGE INTO BUFFER" << endl;
 
         /* DETECT IMAGE KEYPOINTS */
 
@@ -109,6 +109,19 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
                                 }), 
                             keypoints.end());    
         }
+        // Print number of keypoints on preceding vehicle
+        // cout << keypoints.size() << ", ";
+        // Visualize kpts neighbourhood on vehicle
+        bVis = false;
+        if (bVis)
+        {
+            cv::Mat visImage = img.clone();
+            cv::drawKeypoints(img, keypoints, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+            string windowName = "Detector Results";
+            cv::namedWindow(windowName, 6);
+            imshow(windowName, visImage);
+            cv::waitKey(0);
+        }
 
         //// EOF STUDENT ASSIGNMENT
 
@@ -123,12 +136,12 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
                 keypoints.erase(keypoints.begin() + maxKeypoints, keypoints.end());
             }
             cv::KeyPointsFilter::retainBest(keypoints, maxKeypoints);
-            cout << " NOTE: Keypoints have been limited!" << endl;
+            // cout << " NOTE: Keypoints have been limited!" << endl;
         }
 
         // push keypoints and descriptor for current frame to end of data buffer
         (dataBuffer.end() - 1)->keypoints = keypoints;
-        cout << "#2 : DETECT KEYPOINTS done" << endl;
+        // cout << "#2 : DETECT KEYPOINTS done" << endl;
 
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
@@ -143,7 +156,7 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
         // push descriptors for current frame to end of data buffer
         (dataBuffer.end() - 1)->descriptors = descriptors;
 
-        cout << "#3 : EXTRACT DESCRIPTORS done" << endl;
+        // cout << "#3 : EXTRACT DESCRIPTORS done" << endl;
 
         if (dataBuffer.size() > 1) // wait until at least two images have been processed
         {
@@ -168,11 +181,13 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
 
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
+            // Print number of keypoint matches on preceding vehicle
+            cout << matches.size() << ", ";
 
-            cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
+            // cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
 
             // visualize matches between current and previous image
-            bVis = true;
+            bVis = false;
             if (bVis)
             {
                 cv::Mat matchImg = ((dataBuffer.end() - 1)->cameraImg).clone();
@@ -198,8 +213,37 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
 /* MAIN PROGRAM */
 int main(int argc, const char *argv[])
 {
-    string detectorType = "FAST"; // SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
-    string descriptorType = "BRIEF"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
-    detectTrackKpts(detectorType, descriptorType);
+    // string detectorType = "FAST"; // SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
+    // string descriptorType = "BRIEF"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
+
+    vector<string> detectorTypes{"SHITOMASI", "HARRIS", "FAST", "BRISK", "ORB", "AKAZE", "SIFT"};
+    vector<string> descriptorTypes{"BRISK", "BRIEF", "ORB", "FREAK", "AKAZE", "SIFT"};
+
+    cout << "Print number of keypoint matches for each detector + descriptor" << endl;
+
+    for (string detectorType : detectorTypes)
+    {
+        for (string descriptorType : descriptorTypes)
+        {
+            cout << detectorType << ", " << descriptorType << ", ";
+            
+            // AKAZE descriptor only works with AKAZE keypoints, skip other cases
+            if ((descriptorType.compare("AKAZE") == 0) && !(detectorType.compare("AKAZE") == 0))
+            {   
+                cout <<  " Assertion failed" << endl;
+                continue;
+            }
+
+            // ORB descriptor with SIFT detector leads to memory leak
+            if ((descriptorType.compare("ORB") == 0) && (detectorType.compare("SIFT") == 0))
+            {
+                cout <<  " Insufficient memory" << endl;
+                continue;
+            }
+
+            detectTrackKpts(detectorType, descriptorType);
+            cout << endl;
+        }
+    }
     return 0;
 }
