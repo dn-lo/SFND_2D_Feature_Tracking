@@ -38,6 +38,7 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
     int dataBufferSize = 2;       // no. of images which are held in memory (ring buffer) at the same time
     vector<DataFrame> dataBuffer; // list of data frames which are held in memory at the same time
     bool bVis = false;            // visualize results
+    double t;                     // clock
 
     /* MAIN LOOP OVER ALL IMAGES */
 
@@ -75,7 +76,7 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
         //// STUDENT ASSIGNMENT
         //// TASK MP.2 -> add the following keypoint detectors in file matching2D.cpp and enable string-based selection based on detectorType
         //// -> HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
-
+        t = (double)cv::getTickCount();
         if (detectorType.compare("SHITOMASI") == 0)
         {
             detKeypointsShiTomasi(keypoints, imgGray, false);
@@ -88,6 +89,9 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
         {
             detKeypointsModern(keypoints, imgGray, detectorType, false);
         }
+        t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+        // Print detector extraction time in ms
+        cout << 1000 * t / 1.0 << ", ";
         //// EOF STUDENT ASSIGNMENT
 
         //// STUDENT ASSIGNMENT
@@ -150,7 +154,11 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
         //// -> BRIEF, ORB, FREAK, AKAZE, SIFT
 
         cv::Mat descriptors;
+        t = (double)cv::getTickCount();
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
+        t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
+        // Print descriptor extraction time in ms
+        cout << 1000 * t / 1.0 << ", ";
         //// EOF STUDENT ASSIGNMENT
 
         // push descriptors for current frame to end of data buffer
@@ -182,7 +190,7 @@ void detectTrackKpts(std::string detectorType, std::string descriptorType)
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
             // Print number of keypoint matches on preceding vehicle
-            cout << matches.size() << ", ";
+            // cout << matches.size() << ", ";
 
             // cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
 
@@ -219,7 +227,7 @@ int main(int argc, const char *argv[])
     vector<string> detectorTypes{"SHITOMASI", "HARRIS", "FAST", "BRISK", "ORB", "AKAZE", "SIFT"};
     vector<string> descriptorTypes{"BRISK", "BRIEF", "ORB", "FREAK", "AKAZE", "SIFT"};
 
-    cout << "Print number of keypoint matches for each detector + descriptor" << endl;
+    cout << "Print time required for detector and descriptor extraction" << endl;
 
     for (string detectorType : detectorTypes)
     {
